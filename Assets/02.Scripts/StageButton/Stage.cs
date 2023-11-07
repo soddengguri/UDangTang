@@ -16,6 +16,11 @@ public class Stage : MonoBehaviour
     float leftTime = 10.0f;
     float speed = 2.0f;
 
+
+    public PopupManager Popup_1;
+    public PopupManager Popup_2;
+    public PopupManager Popup_3;
+
     StageManager stageManager;
 
     string[] StageName = new string[]
@@ -40,22 +45,8 @@ public class Stage : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (isClicked)
-            if (leftTime > 0)
-            {
-                leftTime -= Time.deltaTime * speed;
-                if (leftTime < 0)
-                {
-                    leftTime = 0;
-                    if (button)
-                        button.enabled = true;
-                    isClicked = true;
-                }
-
-                float filled = 1.0f - (leftTime / coolTime);
-                if (imgFill)
-                    imgFill.fillAmount = filled;
-            }
+        // if (isClicked)
+           //  Accept();
     }
 
     public void OnClicked()
@@ -71,4 +62,26 @@ public class Stage : MonoBehaviour
         if (button)
             button.enabled = false; // 버튼 기능을 해지함.
     }
+
+    private void Accept()
+    {
+        if (leftTime > 0)
+        {
+            leftTime -= Time.deltaTime * speed;
+
+            if (leftTime < 0)
+            {
+                leftTime = 0;
+
+                if (button)
+                    button.enabled = true;
+                isClicked = true;
+            }
+
+            float filled = 1.0f - (leftTime / coolTime);
+            if (imgFill)
+                imgFill.fillAmount = filled;
+        }
+    }
+
 }
