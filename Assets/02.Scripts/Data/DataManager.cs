@@ -15,13 +15,12 @@ public class DataManager : MonoBehaviour
     public static DataManager instance;
 
     public PlayerData nowPlayer = new PlayerData();     
-
-    public string path;  
-    public int nowStage;  
+    public string path;
+    public int nowStage;
 
     private void Awake()
     {
-        #region 
+        #region Singleton
         if (instance == null)
         {
             instance = this;
@@ -33,50 +32,54 @@ public class DataManager : MonoBehaviour
         DontDestroyOnLoad(this.gameObject);
         #endregion
 
-        path = Application.persistentDataPath + "/savedata"; 
+        path = Application.persistentDataPath + "/savedata";
         print(path);
         LoadData();
         
     }
 
 
-    // ?????? ????
+    // 데이터 저장
     public void SaveData()
     {
-        /*
-        if (nowPlayer == null)
-        {
-            nowPlayer = new PlayerData();
-        }
-        */
         string data = JsonUtility.ToJson(nowPlayer);
-        File.WriteAllText(path + nowStage.ToString(), data);
+        File.WriteAllText(path, data);
+        Debug.Log("Save Success : " + path);
     }
 
-    // ?????? ????
+    // 데이터 불러오기
     public void LoadData()
     {
         try
         {
-            string data = File.ReadAllText(path + nowStage.ToString());
+            string data = File.ReadAllText(path);
             nowPlayer = JsonUtility.FromJson<PlayerData>(data);
         }
         catch(FileNotFoundException e)
         {
-            Debug.Log("?????? ???????? ????????.");
+            Debug.LogWarning("FileNotFoundException: " + e.Message);
         }
         
     }
 
+    // 데이터 초기화
     public void DataClear()
     {
-        nowStage = -1;
-        //nowPlayer = new PlayerData();
+        nowPlayer = new PlayerData();
+        SaveData();
     }
 
-    public void DeleteData(int number)
+    // 데이터 삭제
+    public void DeleteData()
     {
-        nowStage = number;
-        File.Delete(path + number.ToString());
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+            Debug.Log("Data deleted.");
+        }
+        else
+        {
+            Debug.LogWarning("Data not found for deletion.");
+        }
     }
 }

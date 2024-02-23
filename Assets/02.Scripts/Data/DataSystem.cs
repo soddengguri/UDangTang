@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -13,55 +14,52 @@ public class DataSystem
 	}
 	public string name;
 }
+
 public static class SaveSystem
 {
-	private static string SavePath => Application.persistentDataPath + "/saves/";
+	private static string SavePath => Path.Combine(Application.persistentDataPath, "saves");
 
-	public static void Save(DataSystem saveData, string saveFileName)
+	public static void Save(PlayerData saveData, string saveFileName)
 	{
-		if (!Directory.Exists(SavePath))
+		try
 		{
-			Directory.CreateDirectory(SavePath);
+			if (!Directory.Exists(SavePath))
+			{
+				Directory.CreateDirectory(SavePath);
+			}
+
+			string saveJson = JsonUtility.ToJson(saveData);
+			string saveFilePath = Path.Combine(SavePath, saveFileName + ".json");
+			File.WriteAllText(saveFilePath, saveJson);
+			Debug.Log("Save Success: " + saveFilePath);
 		}
-
-		string saveJson = JsonUtility.ToJson(saveData);
-
-		string saveFilePath = SavePath + saveFileName + ".json";
-		File.WriteAllText(saveFilePath, saveJson);
-		Debug.Log("Save Success: " + saveFilePath);
+		catch (Exception e)
+		{
+			Debug.LogError($"Save Failed: {e.Message}");
+		}
 	}
 
-	public static DataSystem Load(string saveFileName)
+	public static PlayerData Load(string saveFileName)
 	{
-		string saveFilePath = SavePath + saveFileName + ".json";
+		string saveFilePath = Path.Combine(SavePath, saveFileName + ".json");
 
-		if (!File.Exists(saveFilePath))
+		try
 		{
-			Debug.LogError("No such saveFile exists");
+			if (!File.Exists(saveFilePath))
+			{
+				Debug.LogError("No such saveFile exists");
+				return null;
+			}
+
+			string saveFile = File.ReadAllText(saveFilePath);
+			PlayerData saveData = JsonUtility.FromJson<PlayerData>(saveFile);
+			return saveData;
+		}
+		catch (Exception e)
+		{
+			Debug.LogError($"Load Failed: {e.Message}");
 			return null;
 		}
-
-		string saveFile = File.ReadAllText(saveFilePath);
-		DataSystem saveData = JsonUtility.FromJson<DataSystem>(saveFile);
-		return saveData;
 	}
-}
-public class SaveLoadController : MonoBehaviour
-{
 
-	void Update()
-	{
-		if (Input.GetKeyDown("s"))
-		{
-			DataSystem character = new DataSystem("Mosia");
-
-			SaveSystem.Save(character, "save_001");
-		}
-
-		if (Input.GetKeyDown("l"))
-		{
-			DataSystem loadData = SaveSystem.Load("save_001");
-			Debug.Log(string.Format("LoadData Result => name : {0}", loadData.name));
-		}
-	}
 }

@@ -3,93 +3,78 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Container.Popup
+public class PopupManager : MonoBehaviour
 {
-    public class PopupManager : MonoBehaviour
+    public static PopupManager instance;
+    public Stage stage;
+    
+    public GameObject startPopupPrefab;  // 여행 보내기 팝업 프리팹
+    public GameObject stopPopupPrefab;  // 중단 팝업 프리팹
+    public GameObject donePopupPrefab;   // 완료 팝업 프리팹
+    public GameObject dim;
+
+    public Transform popup;
+    private GameObject currentPopupInstance;
+    
+    private void Awake()
     {
-        [SerializeField]
-        protected GameObject dim = null;
-        [SerializeField]
-        protected Popup popup = null;
-
-        protected PopupAnimator obj_Animator = null;
-
-        protected System.Action<PopupButtonType> OnClosedPopupListener;
-
-        public static PopupManager Instance { get; private set; }
-
-        private void Awake()
+        if (instance == null)
         {
-            Instance = this;
-
-            if (popup == null)
-                popup = GetComponentInChildren<Popup>(true);
-
-            obj_Animator = popup.GetComponent<PopupAnimator>();
+            instance = this;
+        }
+        else if (instance != this)
+        {
+            Destroy(instance.gameObject);
         }
 
-        private void OnDestroy()
-        {
-            Instance = null;
-        }
+        DontDestroyOnLoad(gameObject);
+    }
 
-        public void ShowPopup(string timer, string pieces, string bonus)
-        {
-            ShowPopup(string.Empty, timer, pieces, bonus);
-        }
-        /// <summary>
-        /// Basic 한 팝업 호출시 사용.
-        /// </summary>
-        /// <param name="title">타이틀 내용</param>
-        /// <param name="contents">콘텐츠 내용</param>
-        public void ShowPopup(string title, string timer, string pieces, string bonus)
-        {
-            PopupInfo info = new PopupInfo.Builder()
-                     .SetTitle(title)
-                     .SetTimer(timer)
-                     .SetPieces(pieces)
-                     .SetBonus(bonus)
-                     .SetButtons(PopupButtonType.Confirm)
-                     .Build();
-            ShowPopup(info);
-        }
+    public void StartTravelPopup()
+    {
+        // 여행 보내기 팝업 인스턴스 생성
+        CloseActivePopup();
+        dim.SetActive(true);
+        currentPopupInstance = InstantiatePrefab(startPopupPrefab);
 
-        /// <summary>
-        /// 팝업의 다양한 정보를 가지고 호출할시 사용.
-        /// </summary>
-        /// <param name="info">팝업 정보</param>
-        public void ShowPopup(PopupInfo info)
+    }
+
+    public void StopTravelPopup()
+    {
+        // 중단 팝업 표시 로직 구현
+        CloseActivePopup();
+        dim.SetActive(true);
+        currentPopupInstance = InstantiatePrefab(stopPopupPrefab);
+    }
+
+    public void DoneTravelPopup()
+    {
+        // 완료 팝업 표시 로직 구현
+        CloseActivePopup();
+        dim.SetActive(true);
+        currentPopupInstance = InstantiatePrefab(donePopupPrefab);
+    }
+
+    // 팝업 닫기
+    public void CloseActivePopup()
+    {
+        // 현재 팝업 인스턴스를 제거
+        if (currentPopupInstance != null)
         {
-            if (popup.IsShow)
-            {
-                return;
-            }
-
-            if (info.PauseScene)
-                Time.timeScale = 0;
-
-            popup.OnInitialize(info);
-            OnClosedPopupListener = info.Listener;
-            dim.SetActive(true);
-            popup.Show();
-            obj_Animator.startAnimation(info.Animation);
-        }
-
-        public void HidePopup()
-        {
-            Time.timeScale = 1;
+            Destroy(currentPopupInstance);
+            currentPopupInstance = null;
             dim.SetActive(false);
-            popup.Hide();
+        }
+    }
+
+    private GameObject InstantiatePrefab(GameObject prefab)
+    {
+        if (prefab == null)
+        {
+            Debug.LogError("Prefab is null.");
+            return null;
         }
 
-        public virtual void OnClosePopup(PopupButtonType type)
-        {
-            if (OnClosedPopupListener != null)
-            {
-                OnClosedPopupListener(type);
-                OnClosedPopupListener = null;
-            }
-            HidePopup();
-        }
+        return Instantiate(prefab, popup);
     }
 }

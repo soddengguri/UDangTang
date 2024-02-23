@@ -4,9 +4,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Reflection;
 using System;
-using Container.Popup;
 
-[CustomPropertyDrawer(typeof(PopupInfoDictionary))]
 public class SerializableDictionaryPropertyDrawer : PropertyDrawer
 {
 	const string KeysFieldName = "m_keys";
