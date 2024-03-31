@@ -3,8 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+[System.Serializable]
+public class TravelState
+{
+    public float originalCoolTime;
+    public bool originalIsClicked;
+    // 다른 필요한 변수들을 추가할 수 있음
+}
+
 public class Stage : MonoBehaviour
 {
+    private TravelState originalState;
     private PopupManager popupManager;
     private StageManager stageManager;
 
@@ -15,8 +24,8 @@ public class Stage : MonoBehaviour
     public Text txtStageTime;
     public Image imgFill;
     public Button button;
-    public bool isClicked = false;
-    public bool ingClicked = false;
+    public bool isClicked = false;  //클릭 확인
+    public bool ingClicked = false; //진행 중인 지 확인
     public string now;
 
     private float leftTime = 10.0f;
@@ -35,13 +44,13 @@ public class Stage : MonoBehaviour
         "0초", "20초", "45초", "40초", "63초", "81초", "60초", "90초", "350초", "60초"
     };
 
+    // 스테이지 초기화 
     public void Init(int index, StageManager stageManager)
     {
         this.stageManager = stageManager;
         now = stageNames[index].ToString();
         stageIndex = index;
 
-        //Text btnTxt = Resources.Load<Text>(StageName[index]);
         txtStageName.text = stageNames[index].ToString();
         txtStageTime.text = stageTimes[index].ToString();
 
@@ -61,6 +70,7 @@ public class Stage : MonoBehaviour
         }
     }
 
+    // 스테이지를 클릭 시 호출
     public void OnClicked()
     {
         if (ingClicked)
@@ -71,17 +81,18 @@ public class Stage : MonoBehaviour
         {
             StartCoroutine(ExecuteOnClicked());
         }
-        
+
     }
 
+    // 스테이지 클릭에 대한 코루틴 실행
     private IEnumerator ExecuteOnClicked()
     {
         // 호출 순서: StartTravelPopup() -> Wait for OnYesClicked() -> Continue with the rest
 
         // 1. StartTravelPopup() 호출
-        popupManager.StartTravelPopup();
+        popupManager.StartTravelPopup(txtStageName.text);
+        SaveOriginalState();
 
-        
         // 2. OnYesClicked()이 끝날 때까지 대기
         yield return new WaitUntil(() => YesClicked);
 
@@ -94,21 +105,18 @@ public class Stage : MonoBehaviour
         stageManager.DisableOtherStageButtons(this);
     }
 
-
+    // 여행 시작 
     public void StartCoolTime()
     {
         leftTime = coolTime;
-        isClicked = true;
-        ingClicked = true;
-        /*
-        if (button)
-        {
-            button.enabled = false; // 버튼 기능을 해지함.
-        }
-        */
-       
+        SetIsClicked(true);
+        SetIngClicked(true);
+
+        // 여행 시작 시 이외 팝업이 떠 있다면 닫도록 추가
+        popupManager.CloseActivePopup();
     }
 
+    // 여행 진행 메서드
     public void Accept()
     {
         if (leftTime > 0)
@@ -119,16 +127,11 @@ public class Stage : MonoBehaviour
             {
                 leftTime = 0;
 
-                if (button)
-                {
-                    button.enabled = true;
-                }
-
-                isClicked = false;
-                ingClicked = false;
+                SetIsClicked(false);
+                SetIngClicked(false);
 
                 stageManager.EnableAllStageButtons();
-                popupManager.DoneTravelPopup();
+                popupManager.DoneTravelPopup(txtStageName.text);
             }
 
             float filled = 1.0f - (leftTime / coolTime);
@@ -146,25 +149,28 @@ public class Stage : MonoBehaviour
         }
     }
 
+    // 여행 중지
     private void StopProcess()
     {
-        leftTime = coolTime;
-        ingClicked = false;
+        // 중단 팝업 띄우기
+        popupManager.StopTravelPopup(txtStageName.text);
 
-        popupManager.StopTravelPopup();
+        leftTime = coolTime;
+        SetIsClicked(false);
+        SetIngClicked(false);
     }
 
+    // 여행 초기화
     public void ResetProcess()
     {
-        // 중단되어야 하는 프로세스 초기화 로직을 여기에 추가
-        leftTime = coolTime;
-        isClicked = false;
-        ingClicked = false;
+        // Json에서 상태를 읽어와 복구
+        RestoreOriginalState();
+        SetIsClicked(false);
 
         // UI 초기화 
         if (imgFill)
         {
-            imgFill.fillAmount = 0;
+            imgFill.fillAmount = 1;
         }
 
         int secondsRemaining = Mathf.CeilToInt(leftTime);
@@ -178,5 +184,45 @@ public class Stage : MonoBehaviour
         {
             button.enabled = true;
         }
+    }
+
+    // 여행을 시작하기 전의 상태를 Json으로 저장
+    public void SaveOriginalState()
+    {
+        originalState = new TravelState
+        {
+            originalCoolTime = coolTime,
+            originalIsClicked = isClicked
+            // 다른 필요한 변수들 저장
+        };
+
+        string json = JsonUtility.ToJson(originalState);
+        PlayerPrefs.SetString("OriginalState", json);
+        PlayerPrefs.Save();
+    }
+
+    // Json에서 상태를 읽어와 복구
+    public void RestoreOriginalState()
+    {
+        string json = PlayerPrefs.GetString("OriginalState");
+
+        if (!string.IsNullOrEmpty(json))
+        {
+            originalState = JsonUtility.FromJson<TravelState>(json);
+
+            coolTime = originalState.originalCoolTime;
+            isClicked = originalState.originalIsClicked;
+            // 다른 필요한 변수들 복구
+        }
+    }
+
+    public void SetIngClicked(bool value)
+    {
+        ingClicked = value;
+    }
+
+    public void SetIsClicked(bool value)
+    {
+        isClicked = value;
     }
 }

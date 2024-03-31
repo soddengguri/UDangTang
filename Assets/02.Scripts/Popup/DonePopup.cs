@@ -6,13 +6,7 @@ public class DonePopup : MonoBehaviour
 {
     public void OnYesButtonClicked()
     {
-        Debug.Log("Yes button clicked");
-        Stage.YesClicked = true;
-        PopupManager.instance.CloseActivePopup();
-    }
-
-    public void OnNoButtonClicked()
-    {
+        Stage.YesClicked = false;
         PopupManager.instance.CloseActivePopup();
     }
 }
